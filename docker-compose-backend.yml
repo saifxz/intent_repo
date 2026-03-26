@@ -1,23 +1,51 @@
+
+# docker-compose -f docker-compose-backend.yml up --build
+# docker-compose -f docker-compose-backend.yml down
+
+
+version: '3.8'
+
 services:
+  # 1. RabbitMQ Service
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-container
+    ports:
+      - "5672:5672"   # AMQP protocol
+      - "15672:15672" # Management UI
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Qdrant Service
   qdrant:
-    image: qdrant/qdrant:latest
-    container_name: qdrant-service
+    build:
+      context: .
+      dockerfile: Dockerfile.qdrant
+    container_name: qdrant-container
     ports:
       - "6333:6333"
     volumes:
-      - ./qdrant_storage:/qdrant/storage
-    environment:
-      - QDRANT__STORAGE__PERFORMANCE_BOOTSTRAP=false # Fixes the Windows filesystem error
-    # We are removing the healthcheck block here because it is reporting false negatives
+      - qdrant_storage:/qdrant/storage
 
+  # 3. Backend API Service
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    depends_on:
-      - qdrant # Switched back to a simple string to avoid the 'unhealthy' trap
-    environment:
-      - QDRANT_HOST=qdrant
-      - PYTHONUNBUFFERED=1
+    container_name: backend-container
     ports:
       - "5000:8000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    environment:
+      - QDRANT_HOST=qdrant
+      - RABBITMQ_HOST=rabbitmq
+
+volumes:
+  qdrant_storage:

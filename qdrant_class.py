@@ -6,7 +6,7 @@ import uuid
 class SemanticCache:
     def __init__(self, collection_name="llm_cache", threshold=0.90):
         # CHANGE: Connect to the Docker container instead of :memory:
-        self.client = QdrantClient(host="localhost", port=6333) 
+        self.client = QdrantClient(host="host.docker.internal", port=6333) 
         
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
         self.collection_name = collection_name
