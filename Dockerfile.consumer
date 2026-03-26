@@ -1,0 +1,4 @@
+FROM intent-classifier-api:latest
+RUN pip install pika
+COPY consumer.py .
+CMD ["python", "consumer.py"]

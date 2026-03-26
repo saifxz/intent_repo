@@ -1,0 +1,21 @@
+# Web Framework
+fastapi
+uvicorn
+
+# NLP & Machine Learning
+sentence-transformers
+spacy
+scikit-learn
+pandas
+joblib
+numpy
+
+# Deep Learning (LSTM Backend)
+tensorflow-cpu
+
+# Messaging (RabbitMQ)
+pika
+
+# Utilities
+python-multipart
+requests

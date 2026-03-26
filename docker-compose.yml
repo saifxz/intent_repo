@@ -1,0 +1,46 @@
+version: '3.8'
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672" # Management UI at http://localhost:15672
+
+  producer-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.producer
+    depends_on: [rabbitmq]
+
+
+  consumer-add_product:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    environment:
+      - TOPIC=add_product
+    depends_on: [rabbitmq]
+
+  consumer-change_account:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    environment:
+      - TOPIC=change_account
+    depends_on: [rabbitmq]
+
+  consumer-request_refund:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    environment:
+      - TOPIC=request_refund
+    depends_on: [rabbitmq]
+
+  consumer-availability:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    environment:
+      - TOPIC=availability
+    depends_on: [rabbitmq]
