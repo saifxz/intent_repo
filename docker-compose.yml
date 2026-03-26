@@ -4,14 +4,22 @@ services:
     image: rabbitmq:3-management
     ports:
       - "5672:5672"
-      - "15672:15672" # Management UI at http://localhost:15672
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   producer-1:
     build:
       context: .
       dockerfile: Dockerfile.producer
-    depends_on: [rabbitmq]
-
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   consumer-add_product:
     build:
@@ -19,23 +27,11 @@ services:
       dockerfile: Dockerfile.consumer
     environment:
       - TOPIC=add_product
-    depends_on: [rabbitmq]
-
-  consumer-change_account:
-    build:
-      context: .
-      dockerfile: Dockerfile.consumer
-    environment:
-      - TOPIC=change_account
-    depends_on: [rabbitmq]
-
-  consumer-request_refund:
-    build:
-      context: .
-      dockerfile: Dockerfile.consumer
-    environment:
-      - TOPIC=request_refund
-    depends_on: [rabbitmq]
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    
 
   consumer-availability:
     build:
@@ -43,4 +39,19 @@ services:
       dockerfile: Dockerfile.consumer
     environment:
       - TOPIC=availability
-    depends_on: [rabbitmq]
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+  consumer-request_refund:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    environment:
+      - TOPIC=request_refund
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+  
+  # ... Apply the same depends_on logic to your other consumers

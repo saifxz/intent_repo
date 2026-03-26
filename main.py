@@ -3,7 +3,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from inference import IntentInferenceEngineV2, IntentInferenceEngineV1
+from inference import IntentInferenceEngineV2, IntentInferenceEngineV1,ComplaintInferenceEngine
 import logging
 
 # ----------------------------
@@ -50,11 +50,15 @@ try:
         label_encoder_path="models/label_encoder.joblib"
     )
 
+
     logger.info("Models loaded successfully ✅")
 
 except Exception as e:
     logger.error(f"Error loading models: {e}")
     raise e
+
+
+
 
 
 # ----------------------------
@@ -105,6 +109,47 @@ def predict_intent_v2(query: Query):
         logger.error(f"Error in V2 prediction: {e}")
         raise HTTPException(status_code=500, detail="Prediction failed")
 
+
+try:
+    logger.info("Loading models...")
+
+    # Existing models
+    engine_v1 = IntentInferenceEngineV1(...)
+    engine_v2 = IntentInferenceEngineV2(...)
+
+    # New Complaint Model
+    complaint_engine = ComplaintInferenceEngine(
+        rf_path=r"C:\Users\saiff\Downloads\rf_model.pkl",
+        cv_path=r"C:\Users\saiff\Downloads\count_vectorizer.pkl",
+        tfidf_path=r"C:\Users\saiff\Downloads\tfidf_transformer.pkl",
+        bert_path=r"C:\Users\saiff\Desktop\NLP\bert_sentiment_model"
+    )
+
+    logger.info("All models loaded successfully ✅")
+except Exception as e:
+    logger.error(f"Error loading models: {e}")
+    raise e
+
+# ----------------------------
+# New Route
+# ----------------------------
+
+@app.post("/analyze_complaint")
+def analyze_complaint(query: Query):
+    try:
+        # Perform combined Topic and Sentiment analysis
+        result = complaint_engine.predict(query.text)
+        
+        return {
+            "query": query.text,
+            "predicted_topic": result["topic"],
+            "topic_confidence": result["topic_probs"],
+            "sentiment": result["sentiment"],
+            "sentiment_confidence": result["sentiment_probs"]
+        }
+    except Exception as e:
+        logger.error(f"Error in complaint analysis: {e}")
+        raise HTTPException(status_code=500, detail="Analysis failed")
 
 # ----------------------------
 # Run with:
