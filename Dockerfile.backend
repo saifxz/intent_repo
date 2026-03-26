@@ -1,15 +1,23 @@
 FROM base_image:latest
 
-COPY ../models/ .
+RUN python -m spacy download en_core_web_sm
+RUN pip install qdrant-client 
 
-COPY ../inference.py .
+COPY models/ .
+
+COPY inference.py .
+
+COPY qdrant_class.py .
 
 COPY main.py .
+
+COPY producer_class.py .
+
+COPY qdrant_class.py .
 
 EXPOSE 8000
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-# docker build -t backend:v1 -f Dockerfile.backend .
-# docker run -d -p 5000:8000 --name backend-pod backend:v1
-
+# docker build -t backend-image -f Dockerfile.backend .
+# docker run -d -p 5000:8000 --name backend-pod backend-image

@@ -1,0 +1,14 @@
+# Use official Qdrant image
+FROM qdrant/qdrant:latest
+
+# Expose Qdrant API port
+EXPOSE 6333
+
+# Optional: set environment variables
+# ENV QDRANT__STORAGE__PERFORMANCE_BOOTSTRAP=false
+
+CMD ["./qdrant"]
+
+# docker build -f Dockerfile.qdrant -t qdrant-image .
+# docker run -d -p 6333:6333 --name qdrant-pod qdrant-image  
+

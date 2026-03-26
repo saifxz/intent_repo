@@ -54,4 +54,14 @@ services:
       rabbitmq:
         condition: service_healthy
   
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant_cache
+    ports:
+      - "6333:6333" # HTTP API
+      - "6334:6334" # gRPC API (faster for bulk)
+    volumes:
+      # This is the "Magic" line for storage
+      - ./qdrant_storage:/qdrant/storage
+    restart: always
   # ... Apply the same depends_on logic to your other consumers

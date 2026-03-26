@@ -15,11 +15,11 @@ from producer_class import QueryProducer
 # model = joblib.load('models/intent_classifier_v1.joblib')
 # sbert = SentenceTransformer('all-MiniLM-L6-v2')
 
-engine1 = IntentInferenceEngineV1(
-    model_path="models/intent_classifier_v1.joblib",
-    tokenizer_path="models/tokenizer.joblib",
-    label_encoder_path="models/label_encoder.joblib"
-)
+# engine1 = IntentInferenceEngineV1(
+#     model_path="models/intent_classifier_v1.joblib",
+#     tokenizer_path="models/tokenizer.joblib",
+#     label_encoder_path="models/label_encoder.joblib"
+# )
 engine2 = IntentInferenceEngineV2(
     model_path="models/intent_classifier_v1.joblib"
 )

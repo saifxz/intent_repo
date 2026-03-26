@@ -1,0 +1,23 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant-service
+    ports:
+      - "6333:6333"
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT__STORAGE__PERFORMANCE_BOOTSTRAP=false # Fixes the Windows filesystem error
+    # We are removing the healthcheck block here because it is reporting false negatives
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    depends_on:
+      - qdrant # Switched back to a simple string to avoid the 'unhealthy' trap
+    environment:
+      - QDRANT_HOST=qdrant
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "5000:8000"
