@@ -1,4 +1,5 @@
 FROM base_image:latest
 COPY consumer_class.py .
 COPY consumer.py .
+COPY logger_config.py .
 CMD ["python", "-u" ,"consumer.py"]

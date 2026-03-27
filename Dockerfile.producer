@@ -1,14 +1,12 @@
 FROM base_image:latest
 
-# 1. Install pika (for RabbitMQ) and spacy
-# RUN pip install --no-cache-dir spacy
+WORKDIR /app 
 
-# 2. Download the English language model (crucial for LemmatizeHandler)
-# RUN python -m spacy download en_core_web_sm
 COPY producer_class.py .
 COPY producer.py .
 COPY inference.py .
 COPY ./models .
-# COPY intent_classifier_v1.joblib . # Only if not in base
+COPY logger_config.py .
+COPY prioritize_strategy.py .
 
 CMD ["python", "-u", "producer.py"]

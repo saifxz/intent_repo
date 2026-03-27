@@ -11,8 +11,8 @@ services:
     image: rabbitmq:3-management
     container_name: rabbitmq-container
     ports:
-      - "5672:5672"   # AMQP protocol
-      - "15672:15672" # Management UI
+      - "5672:5672"   
+      - "15672:15672" 
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
@@ -46,6 +46,40 @@ services:
     environment:
       - QDRANT_HOST=qdrant
       - RABBITMQ_HOST=rabbitmq
+      - PRIORITY_STRATEGY=intent
+
+  consumer-add_product:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    environment:
+      - TOPIC=add_product
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+  
+
+  consumer-availability:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    environment:
+      - TOPIC=availability
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+  consumer-request_refund:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    environment:
+      - TOPIC=request_refund
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
 volumes:
   qdrant_storage:

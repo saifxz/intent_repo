@@ -15,6 +15,12 @@ COPY producer_class.py .
 
 COPY qdrant_class.py .
 
+COPY ./bert_sentiment_model ./bert_sentiment_model
+
+COPY logger_config.py .
+
+COPY prioritize_strategy.py .
+
 EXPOSE 8000
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -116,7 +116,26 @@ class IntentInferenceEngineV2:
             "is_reliable": confidence > 0.70,
             "processed_text": processed_text # Useful for debugging in logs
         }
-
+    def predict_top_k(self, text, k=5):
+        # 1. Preprocess the text (Crucial to match the training state)
+        processed_text = self.preprocessor.handle(text)
+        
+        # 2. Get the SBERT embedding (This replaces "self.vectorizer")
+        vector = self.sbert.encode([processed_text]) 
+        
+        # 3. Get all probabilities using "self.classifier"
+        probs = self.classifier.predict_proba(vector)[0]
+        
+        # 4. Get the class names from the classifier
+        classes = self.classifier.classes_
+        
+        # 5. Map classes to probabilities and sort
+        class_probs = {str(label): float(prob) for label, prob in zip(classes, probs)}
+        
+        # Sort by probability descending
+        top_k = sorted(class_probs.items(), key=lambda x: x[1], reverse=True)[:k]
+        
+        return [{"intent": label, "confidence": prob} for label, prob in top_k]
 class ComplaintAnalysisEngine:
     """Topic Modeling + BERT Sentiment Engine."""
     def __init__(self, rf_model_path, count_vect_path, tfidf_path, bert_path):

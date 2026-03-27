@@ -1,3 +1,6 @@
+# docker-compose -f docker-compose.yml up --build
+# docker-compose -f docker-compose.yml down
+
 version: '3.8'
 services:
   rabbitmq:
@@ -61,7 +64,5 @@ services:
       - "6333:6333" # HTTP API
       - "6334:6334" # gRPC API (faster for bulk)
     volumes:
-      # This is the "Magic" line for storage
       - ./qdrant_storage:/qdrant/storage
     restart: always
-  # ... Apply the same depends_on logic to your other consumers

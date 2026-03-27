@@ -5,26 +5,51 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from inference import IntentInferenceEngineV2, IntentInferenceEngineV1
-import logging
+# import logging
 import time
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch.nn.functional as F
+import numpy as np
+import uuid
+from fastapi import Request
+from logger_config import request_id_var
+import os
 
 from producer_class import QueryProducer
 from qdrant_class import SemanticCache
 
-# ----------------------------
-# Logging Setup
-# ----------------------------
-# Use a more descriptive format to see timestamps and log levels clearly
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-)
-logger = logging.getLogger("API_Main")
 
-# ----------------------------
-# App Initialization
-# ----------------------------
+from logger_config import Logger
+
+logger = Logger("AppLogger")
+
+
 app = FastAPI(title="E-commerce Intent Classifier API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.middleware("http")
+async def add_request_id(request: Request, call_next):
+    request_id = str(uuid.uuid4())[:8]  # short ID
+
+    # Set request ID in context
+    request_id_var.set(request_id)
+
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+
+    return response
+
+@app.get("/")
+def root():
+    return {"message": "Intent Classifier API is running 🚀"}
 
 try:
     logger.info("Initializing Semantic Cache...")
@@ -35,20 +60,8 @@ except Exception as e:
     logger.error(f"FATAL: Could not connect to Qdrant: {e}")
     cache = None 
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-class Query(BaseModel):
-    text: str
 
-# ----------------------------
-# Load Models
-# ----------------------------
 try:
     logger.info("Starting Model loading sequence...")
     engine_v2 = IntentInferenceEngineV2(
@@ -62,17 +75,38 @@ try:
 
 except Exception as e:
     logger.error(f"CRITICAL ERROR during startup: {e}", exc_info=True)
-    # Don't raise here if you want the app to still try to start, 
-    # but usually, we want it to fail fast.
     raise e
 
-# ----------------------------
-# Routes
-# ----------------------------
 
-@app.get("/")
-def root():
-    return {"message": "Intent Classifier API is running 🚀"}
+
+
+MODEL_PATH = os.path.abspath("bert_sentiment_model")
+
+# MODEL_PATH = "bert_sentiment_model"
+sentiment_tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH,local_files_only=True)
+sentiment_model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH,local_files_only=True)
+sentiment_model.eval()
+
+
+def get_sentiment(text):
+    inputs = sentiment_tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+    with torch.no_grad():
+        outputs = sentiment_model(**inputs)
+        probs = F.softmax(outputs.logits, dim=1).squeeze().tolist()
+        pred = int(np.argmax(probs))
+    
+    rating = pred + 1
+    sentiment = "Negative" if rating <= 2 else "Neutral" if rating == 3 else "Positive"
+    sentiment_probs = {
+        "Negative": probs[0],
+        "Neutral": probs[1],
+        "Positive": probs[2]
+    }
+    logger.info(f"Sentiment analysis for '{text}': {sentiment} (Probs: {sentiment_probs})") 
+    return sentiment, sentiment_probs
+
+class Query(BaseModel):
+    text: str
 
 @app.post("/predict_intent_v2")
 def predict_intent_v2(query: Query):
@@ -81,9 +115,20 @@ def predict_intent_v2(query: Query):
     
     try:
         # 1. Cache Lookup
+        sentiment, sentiment_probs = get_sentiment(query.text)
+
+
         if cache:
             cached_intent = cache.check_cache(query.text)
+            logger.info(f"Cache lookup for: '{query.text}'")
             if cached_intent:
+                
+                try:
+                    api_producer.publish_query(query_text=query.text)
+                    logger.info("Message published to RabbitMQ.")
+                except Exception as p_err:
+                    logger.warning(f"RabbitMQ Publish failed: {p_err}")
+
                 logger.info(f"Result served from Cache for: '{query.text}'")
                 return {
                     "query": query.text,
@@ -96,6 +141,11 @@ def predict_intent_v2(query: Query):
         
         # 2. Inference
         result = engine_v2.predict(query.text)
+        logger.info(f"Inference result for '{query.text}': {result}")
+
+        top_intents = engine_v2.predict_top_k(query.text, k=5)
+        logger.info(f"Top intents for '{query.text}': {top_intents}")
+
         intent_name = str(result.get("intent"))
         confidence = result.get("confidence")
         logger.info(f"Inference complete. Intent: {intent_name} ({confidence})")
@@ -121,7 +171,10 @@ def predict_intent_v2(query: Query):
             "query": query.text,
             "intent": intent_name,
             "confidence": confidence,
-            "source": "inference_engine"
+            "source": "inference_engine",
+            "top_intents": top_intents,
+            "sentiment": sentiment,
+            "sentiment_probs": sentiment_probs
         }
 
     except Exception as e:

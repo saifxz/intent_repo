@@ -56,16 +56,53 @@ if __name__ == "__main__":
     # mobile_producer = QueryProducer(name="Mobile_App", engine=engine2)
 
     # 3. Define query sets
-    queries = ["I need a refund", "Add this to my cart", "Is this in stock?"]
+    # List of only instruction strings (10 per intent)
+    queries = [
+        # --- Intent: request_refund ---
+        "I received a damaged item and I want my money back.",
+        "How can I initiate a return for a full refund?",
+        "The product quality is poor, I'd like a reimbursement.",
+        "Can you check the status of my refund for order #9982?",
+        "I was overcharged on my last transaction and need a refund.",
+        "Is it possible to get a refund if I don't have the original receipt?",
+        "I want to cancel my order and get a complete refund.",
+        "The package never arrived; I'm requesting a money-back claim.",
+        "I'd like to return this gift and get the funds back on my card.",
+        "Where do I find the refund request form on the website?",
+
+        # --- Intent: availability ---
+        "Is the blue velvet sofa currently in stock?",
+        "When will you be restocking the wireless gaming mice?",
+        "Do you have any units of the 4K monitor left in the London warehouse?",
+        "Is this specific model of running shoes available in size 10?",
+        "Check if the limited edition vinyl is still for sale.",
+        "Are there any pre-order slots available for the new console?",
+        "Can I get an alert when the summer dress collection is available?",
+        "Is the organic skincare kit available for international shipping?",
+        "Do you still carry the vintage leather jackets in-store?",
+        "How many units of this laptop are currently available?",
+
+        # --- Intent: add_product ---
+        "Please add two bottles of the lavender essential oil to my cart.",
+        "I want to put the extra-large yoga mat into my shopping basket.",
+        "Add this discounted coffee machine to my order list.",
+        "Can you put one of these silk pillowcases in my bag?",
+        "Add the stainless steel water bottle to my checkout items.",
+        "I'd like to add the wool scarf to my cart before I pay.",
+        "Wanna add some batteries to the cart please.",
+        "Put the mechanical keyboard in my basket in white color.",
+        "I need to add the kitchen knife set to my current shopping session.",
+        "Add this protein powder to my cart in chocolate flavor."
+    ]
     # print("Producers ready. Starting to publish queries...")
     # To run multiple producers simultaneously, you'd usually use threading.
     # For a single-threaded test, you can just call them manually:
     try:
         while True:
-            print("Publishing queries from Web Producer...", queries)
+            # print("Publishing queries from Web Producer...", queries)
             web_producer.publish_query(random.choice(queries))
 
             # mobile_producer.publish_query(random.choice(queries))
-            # time.sleep(5)
+            time.sleep(5)
     except KeyboardInterrupt:
         print("Shutting down producers...")

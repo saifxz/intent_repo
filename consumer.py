@@ -49,6 +49,7 @@ def run_consumer(topic_name):
     c = QueryConsumer(topic=topic_name)
     c.start()
 run_consumer(os.getenv('TOPIC', 'general'))
+
 # Start both in separate threads
 # threading.Thread(target=run_consumer, args=(os.getenv('TOPIC'),)).start()
 # threading.Thread(target=run_consumer, args=(os.getenv('TOPIC'),)).start()
